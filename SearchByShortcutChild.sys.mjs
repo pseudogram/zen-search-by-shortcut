@@ -56,19 +56,30 @@ export class SearchByShortcutChild extends JSWindowActorChild {
     input.addEventListener("focusin", () => capture(true));
     input.addEventListener("focusout", () => capture(false));
 
+    // Type a combo, Enter searches for it; Esc or Backspace clears. Bare Esc
+    // is given up as a searchable shortcut so it can clear.
+    let pending = "";
     const show = (text) => (input.wrappedJSObject.value = text);
+    const bare = (data) => !data.modifiers;
     this.#page.RPMAddMessageListener(
       "CustomKeys:CapturedKey",
       Cu.exportFunction(({ data }) => {
         if (!input.matches(":focus-within")) return;
         if (data.isModifier) return show(data.modifierString);
-        if (data.keycode === "VK_BACK_SPACE") {
+        if (
+          data.keycode === "VK_BACK_SPACE" ||
+          (data.keycode === "VK_ESCAPE" && bare(data))
+        ) {
+          pending = "";
           show("");
           return this.filter("");
         }
+        if (data.keycode === "VK_RETURN" && bare(data)) {
+          return this.filter(pending);
+        }
         if (data.isValid) {
-          show(data.shortcut);
-          this.filter(data.shortcut);
+          pending = data.shortcut;
+          show(pending);
         }
       }, this.contentWindow),
     );
