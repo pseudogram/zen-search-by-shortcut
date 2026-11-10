@@ -1,4 +1,27 @@
 const PACKAGE = "chrome://zen-search-by-shortcut/content";
+const MAC_MODIFIERS = "⌃⌥⇧⌘";
+
+// "⇧⌘X" on macOS, "Ctrl+Shift+X" elsewhere; the key is "" for modifiers alone.
+function parseShortcut(shortcut) {
+  if (!shortcut.includes("+")) {
+    let i = 0;
+    while (i < shortcut.length && MAC_MODIFIERS.includes(shortcut[i])) i++;
+    return { modifiers: [...shortcut.slice(0, i)], key: shortcut.slice(i) };
+  }
+  const parts = shortcut.split("+");
+  const key = parts.pop();
+  return { modifiers: parts.filter(Boolean), key };
+}
+
+// The typed keys are a minimum: same key (if one was typed) and at least the
+// typed modifiers, so ⌘X also finds ⇧⌘X.
+function shortcutMatches(query, value) {
+  if (!query) return true;
+  if (!value) return false;
+  const q = parseShortcut(query);
+  const v = parseShortcut(value);
+  return (!q.key || q.key === v.key) && q.modifiers.every((m) => v.modifiers.includes(m));
+}
 
 export class SearchByShortcutChild extends JSWindowActorChild {
   #editing = null;
@@ -65,12 +88,11 @@ export class SearchByShortcutChild extends JSWindowActorChild {
     input.addEventListener("focusin", () => capture(true));
     input.addEventListener("focusout", () => capture(false));
 
-    // Filters as you type. Held modifiers alone match every shortcut using
-    // them; a full combo matches exactly. Bare Esc is given up as a searchable
-    // shortcut so it can clear.
-    const search = (text, partial = false) => {
+    // Filters as you type (see shortcutMatches). Bare Esc is given up as a
+    // searchable shortcut so it can clear.
+    const search = (text) => {
       input.wrappedJSObject.value = text;
-      this.filter(text, partial);
+      this.filter(text);
     };
     input.addEventListener("input", () => {
       if (!input.wrappedJSObject.value) this.filter("");
@@ -79,7 +101,7 @@ export class SearchByShortcutChild extends JSWindowActorChild {
       "CustomKeys:CapturedKey",
       Cu.exportFunction(({ data }) => {
         if (!input.matches(":focus-within")) return;
-        if (data.isModifier) return search(data.modifierString, true);
+        if (data.isModifier) return search(data.modifierString);
         if (
           data.keycode === "VK_BACK_SPACE" ||
           (data.keycode === "VK_ESCAPE" && !data.modifiers)
@@ -91,27 +113,17 @@ export class SearchByShortcutChild extends JSWindowActorChild {
     );
   }
 
-  // Modifier symbols on macOS ("⇧⌘"), "Ctrl+Shift+" elsewhere.
-  static modifiersOf(modifierString) {
-    return modifierString.includes("+")
-      ? modifierString.split("+").filter(Boolean).map((m) => `${m}+`)
-      : [...modifierString];
-  }
-
   // Mirrors about:keyboard's own onSearchInput, matching the shortcut instead of the label.
-  filter(shortcut, partial = false) {
+  filter(shortcut) {
     const doc = this.document;
-    const modifiers = partial ? SearchByShortcutChild.modifiersOf(shortcut) : [];
-    const matches = (value) =>
-      !shortcut ||
-      (partial ? !!value && modifiers.every((m) => value.includes(m)) : value === shortcut);
     const byName = doc.getElementById("search");
     if (shortcut && byName.wrappedJSObject.value) {
       byName.wrappedJSObject.value = "";
       byName.dispatchEvent(new this.contentWindow.Event("input"));
     }
     for (const row of doc.querySelectorAll("#table .key")) {
-      const match = matches(
+      const match = shortcutMatches(
+        shortcut,
         row.querySelector(".currentShortcut").wrappedJSObject.value,
       );
       row.hidden = !match;

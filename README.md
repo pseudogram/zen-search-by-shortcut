@@ -2,7 +2,7 @@
 
 A [Sine](https://github.com/CosmoCreeper/Sine) mod for Zen. It adds a
 **Search by keyboard shortcut** box under the name search on `about:keyboard`. Focus it
-and press keys: the list filters as you type. Held modifiers alone (⌘, ⇧⌘…) show every shortcut using them; a full combination shows only the shortcuts bound to it. Esc or
+and press keys: the list filters as you type. What you press is a minimum: ⌘ shows every shortcut using ⌘, and ⌘X also finds ⇧⌘X. Esc or
 Backspace clears it.
 
 Needs **Allow external JS** (`sine.allow-unsafe-js`) in Sine's settings, since
