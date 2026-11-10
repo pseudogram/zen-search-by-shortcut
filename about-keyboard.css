@@ -1,3 +1,18 @@
+.shortcut-search-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xsmall);
+}
+
+/* Lines up with the input's text, past its icon. */
+#shortcutSearchHint {
+  margin: 0;
+  font-size: var(--font-size-small);
+  padding-inline-start: calc(
+    2 * var(--space-medium) + var(--input-search-icon-size) + 1px
+  );
+}
+
 /* Extension rows carry "internal" so about:keyboard won't hand their keys to
    CustomKeys; give them back the buttons that class hides. */
 .ext-key.internal .change {

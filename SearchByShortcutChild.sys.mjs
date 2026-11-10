@@ -39,8 +39,16 @@ export class SearchByShortcutChild extends JSWindowActorChild {
       "Search by keyboard shortcut, press a key combination",
     );
     input.setAttribute("inputlayout", "block");
-    input.setAttribute("description", "↩ to search · Esc to clear");
-    doc.getElementById("search").after(input);
+    // moz-input's own description sits above the field in block layout.
+    const hint = doc.createElement("p");
+    hint.id = "shortcutSearchHint";
+    hint.className = "text-deemphasized";
+    hint.textContent = "↩ to search · Esc to clear";
+    input.setAttribute("aria-description", hint.textContent);
+    const group = doc.createElement("div");
+    group.className = "shortcut-search-group";
+    group.append(input, hint);
+    doc.getElementById("search").after(group);
     input.wrappedJSObject.updateComplete.then(() =>
       input.shadowRoot
         .getElementById("input")
