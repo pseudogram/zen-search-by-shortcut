@@ -43,7 +43,7 @@ export class SearchByShortcutChild extends JSWindowActorChild {
     const hint = doc.createElement("p");
     hint.id = "shortcutSearchHint";
     hint.className = "text-deemphasized";
-    hint.textContent = "↩ to search · Esc to clear";
+    hint.textContent = "Esc to clear";
     input.setAttribute("aria-description", hint.textContent);
     const group = doc.createElement("div");
     group.className = "shortcut-search-group";
@@ -65,48 +65,55 @@ export class SearchByShortcutChild extends JSWindowActorChild {
     input.addEventListener("focusin", () => capture(true));
     input.addEventListener("focusout", () => capture(false));
 
-    // Type a combo, Enter searches for it; Esc or Backspace clears. Bare Esc
-    // is given up as a searchable shortcut so it can clear.
-    let pending = "";
-    const show = (text) => (input.wrappedJSObject.value = text);
-    const bare = (data) => !data.modifiers;
+    // Filters as you type. Held modifiers alone match every shortcut using
+    // them; a full combo matches exactly. Bare Esc is given up as a searchable
+    // shortcut so it can clear.
+    const search = (text, partial = false) => {
+      input.wrappedJSObject.value = text;
+      this.filter(text, partial);
+    };
+    input.addEventListener("input", () => {
+      if (!input.wrappedJSObject.value) this.filter("");
+    });
     this.#page.RPMAddMessageListener(
       "CustomKeys:CapturedKey",
       Cu.exportFunction(({ data }) => {
         if (!input.matches(":focus-within")) return;
-        if (data.isModifier) return show(data.modifierString);
+        if (data.isModifier) return search(data.modifierString, true);
         if (
           data.keycode === "VK_BACK_SPACE" ||
-          (data.keycode === "VK_ESCAPE" && bare(data))
+          (data.keycode === "VK_ESCAPE" && !data.modifiers)
         ) {
-          pending = "";
-          show("");
-          return this.filter("");
+          return search("");
         }
-        if (data.keycode === "VK_RETURN" && bare(data)) {
-          return this.filter(pending);
-        }
-        if (data.isValid) {
-          pending = data.shortcut;
-          show(pending);
-        }
+        if (data.isValid) search(data.shortcut);
       }, this.contentWindow),
     );
   }
 
+  // Modifier symbols on macOS ("⇧⌘"), "Ctrl+Shift+" elsewhere.
+  static modifiersOf(modifierString) {
+    return modifierString.includes("+")
+      ? modifierString.split("+").filter(Boolean).map((m) => `${m}+`)
+      : [...modifierString];
+  }
+
   // Mirrors about:keyboard's own onSearchInput, matching the shortcut instead of the label.
-  filter(shortcut) {
+  filter(shortcut, partial = false) {
     const doc = this.document;
+    const modifiers = partial ? SearchByShortcutChild.modifiersOf(shortcut) : [];
+    const matches = (value) =>
+      !shortcut ||
+      (partial ? !!value && modifiers.every((m) => value.includes(m)) : value === shortcut);
     const byName = doc.getElementById("search");
     if (shortcut && byName.wrappedJSObject.value) {
       byName.wrappedJSObject.value = "";
       byName.dispatchEvent(new this.contentWindow.Event("input"));
     }
     for (const row of doc.querySelectorAll("#table .key")) {
-      const match =
-        !shortcut ||
-        row.querySelector(".currentShortcut").wrappedJSObject.value ===
-          shortcut;
+      const match = matches(
+        row.querySelector(".currentShortcut").wrappedJSObject.value,
+      );
       row.hidden = !match;
       row.classList.toggle("hidden", !match);
     }
