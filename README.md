@@ -7,3 +7,7 @@ visible. Backspace clears it.
 
 Needs **Allow external JS** (`sine.allow-unsafe-js`) in Sine's settings, since
 the mod isn't in the Sine store.
+
+It also adds an **Extensions** section listing every extension shortcut (the
+ones from about:addons → Manage Extension Shortcuts). Both searches find them,
+and Edit, Clear and Reset work as they do in about:addons, with the same checks.

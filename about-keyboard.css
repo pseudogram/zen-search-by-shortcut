@@ -1,0 +1,17 @@
+/* Extension rows carry "internal" so about:keyboard won't hand their keys to
+   CustomKeys; give them back the buttons that class hides. */
+.ext-key.internal .change {
+  display: revert;
+}
+
+.ext-key.internal .clear {
+  display: revert;
+}
+
+.ext-key.customized .clear {
+  display: none;
+}
+
+.ext-key.editing .change {
+  display: none;
+}

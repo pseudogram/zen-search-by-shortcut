@@ -1,9 +1,9 @@
 {
   "id": "zen-search-by-shortcut",
   "name": "Search by Shortcut",
-  "description": "Adds a \"Search by shortcut\" box to about:keyboard: press a key combo to see what it's bound to.",
+  "description": "Adds a \"Search by keyboard shortcut\" box to about:keyboard, and lists extension shortcuts there so you can search and edit them.",
   "author": "pseudogram",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "homepage": "https://github.com/pseudogram/zen-search-by-shortcut",
   "createdAt": "2026-11-09",
   "updatedAt": "2026-11-09",
