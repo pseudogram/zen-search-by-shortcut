@@ -39,6 +39,7 @@ export class SearchByShortcutChild extends JSWindowActorChild {
       "Search by keyboard shortcut, press a key combination",
     );
     input.setAttribute("inputlayout", "block");
+    input.setAttribute("description", "↩ to search · Esc to clear");
     doc.getElementById("search").after(input);
     input.wrappedJSObject.updateComplete.then(() =>
       input.shadowRoot
